@@ -1,7 +1,7 @@
 # Maintainer: wyre
 pkgname=mcsrvmanager
 pkgver=0.1.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Templated systemd + tmux Minecraft server manager with backup timer'
 arch=('any')
 url='https://example.invalid/mcsrvmanager'
@@ -22,6 +22,7 @@ package() {
 
   # Install scripts to /usr/bin for packaged deployments.
   install -m0755 src/mc-backup.sh "$pkgdir/usr/bin/mc-backup.sh"
+  install -m0755 src/mc-set-backup-timer.sh "$pkgdir/usr/bin/mc-set-backup-timer.sh"
   install -m0755 src/mc-tmux-start.sh "$pkgdir/usr/bin/mc-tmux-start.sh"
   install -m0755 src/mc-tmux-stop.sh "$pkgdir/usr/bin/mc-tmux-stop.sh"
 
@@ -31,7 +32,6 @@ package() {
 
   install -m0644 "$srcdir/mc@.service.pkg" "$pkgdir/usr/lib/systemd/system/mc@.service"
   install -m0644 "$srcdir/mc-backup@.service.pkg" "$pkgdir/usr/lib/systemd/system/mc-backup@.service"
-  install -m0644 src/mc-backup@.timer "$pkgdir/usr/lib/systemd/system/mc-backup@.timer"
 
   install -m0644 src/mc-common.env.example "$pkgdir/usr/share/doc/$pkgname/examples/mc-common.env.example"
   install -m0644 src/mc-instance.env.example "$pkgdir/usr/share/doc/$pkgname/examples/mc-instance.env.example"

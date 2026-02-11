@@ -10,7 +10,8 @@ Next steps:
      to /etc/default/mc/common.env and /etc/default/mc/<instance>.env
   2. Enable an instance:
      sudo systemctl enable --now mc@<instance>.service
-     sudo systemctl enable --now mc-backup@<instance>.timer
+  3. Create and enable the per-instance backup timer:
+     sudo mc-set-backup-timer.sh <instance>
 
 MSG
 }

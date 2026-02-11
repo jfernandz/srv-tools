@@ -17,7 +17,7 @@ Each instance:
 - runs in its own tmux session
 - is controlled by `mc@<instance>.service`
 - can be backed up via `mc-backup@<instance>.service`
-- can be scheduled via `mc-backup@<instance>.timer`
+- can be scheduled via `mc-set-backup-timer.sh <instance>`
 
 Backups are created with 7-Zip and exclude dynmap tile data (`dynmap/web`) by default.
 
@@ -29,8 +29,9 @@ Starts and stops a Minecraft instance in a tmux session.
 `mc-backup@.service`::
 One-shot job: stop instance, backup files, start instance.
 
-`mc-backup@.timer`::
-Calendar timer triggering `mc-backup@<instance>.service`.
+`mc-set-backup-timer.sh`::
+Generates `/etc/systemd/system/mc-backup@<instance>.timer` from env settings
+and enables it.
 
 == CONFIGURATION
 
@@ -77,25 +78,34 @@ Delete backup archives older than this value. Default: `14`.
 `MC_BACKUP_EXCLUDES`::
 Optional extra 7z exclude patterns (space-separated).
 
+`MC_BACKUP_ON_CALENDAR`::
+Per-instance timer schedule (same format as `OnCalendar=`). Default: `*-*-* 11:30:00`.
+
+`MC_BACKUP_RANDOMIZED_DELAY_SEC`::
+Per-instance timer jitter. Default: `15m`.
+
+`MC_BACKUP_PERSISTENT`::
+Run missed backups after downtime (`true` or `false`). Default: `true`.
+
 == EXAMPLES
 
-Enable and start one instance named `fabri_kmz`:
+Enable and start one instance named `fabric_kmz`:
 
 ----
-systemctl enable --now mc@fabri_kmz.service
-systemctl enable --now mc-backup@fabri_kmz.timer
+systemctl enable --now mc@fabric_kmz.service
+mc-set-backup-timer.sh fabric_kmz
 ----
 
 Run backup immediately:
 
 ----
-systemctl start mc-backup@fabri_kmz.service
+systemctl start mc-backup@fabric_kmz.service
 ----
 
 Attach to the instance console:
 
 ----
-tmux attach -t mc-fabri_kmz
+tmux attach -t mc-fabric_kmz
 ----
 
 == BACKUP WORKFLOW
@@ -114,17 +124,19 @@ tmux attach -t mc-fabri_kmz
 
 `/usr/lib/systemd/system/mc-backup@.service`
 
-`/usr/lib/systemd/system/mc-backup@.timer`
-
 `/usr/bin/mc-tmux-start.sh`
 
 `/usr/bin/mc-tmux-stop.sh`
 
 `/usr/bin/mc-backup.sh`
 
+`/usr/bin/mc-set-backup-timer.sh`
+
 `/etc/default/mc/common.env`
 
 `/etc/default/mc/<instance>.env`
+
+`/etc/systemd/system/mc-backup@<instance>.timer`
 
 `/usr/share/doc/mcsrvmanager/examples/mc-common.env.example`
 

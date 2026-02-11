@@ -1,7 +1,7 @@
 pkgbase = mcsrvmanager
 	pkgdesc = Templated systemd + tmux Minecraft server manager with backup timer
 	pkgver = 0.1.0
-	pkgrel = 1
+	pkgrel = 2
 	url = https://example.invalid/mcsrvmanager
 	install = mcsrvmanager.install
 	arch = any
