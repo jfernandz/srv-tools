@@ -32,7 +32,7 @@ trap restart_service EXIT
 
 for _ in {1..30}; do
   systemctl is-active --quiet "$SERVICE" || break
-  sleep 1
+  sleep 10
 done
 
 cd "$SRV_DIR"
