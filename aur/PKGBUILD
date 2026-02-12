@@ -4,13 +4,13 @@ pkgver=0.1.0
 pkgrel=1
 pkgdesc='Templated systemd + tmux Minecraft server manager with backup timer'
 arch=('any')
-url='REPLACE_WITH_REPO_URL'
+url='https://github.com/jfernandz/mcsrvmanager'
 license=('custom')
 depends=('bash' 'systemd' 'tmux' '7zip' 'java-runtime-headless')
 makedepends=('asciidoctor')
 install="$pkgname.install"
 
-_repo_url='REPLACE_WITH_REPO_URL'
+_repo_url='https://github.com/jfernandz/mcsrvmanager'
 
 source=(
   "${pkgname}-${pkgver}.tar.gz::${_repo_url}/archive/refs/tags/v${pkgver}.tar.gz"
