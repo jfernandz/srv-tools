@@ -1,0 +1,142 @@
+= mcsrvmanager
+
+mcsrvmanager is a systemd + tmux based Minecraft server instance manager with scheduled backups.
+
+== Description
+
+mcsrvmanager provides templated systemd units and helper scripts to run one or more
+Minecraft servers as named instances.
+
+Each instance:
+
+- runs in its own tmux session
+- is controlled by `mc@<instance>.service`
+- can be backed up via `mc-backup@<instance>.service`
+- can be scheduled via `mc-set-backup-timer.sh <instance>`
+
+Backups are created with 7-Zip and exclude dynmap tile data (`dynmap/web`) by default.
+
+== Units and Scripts
+
+`mc@.service`::
+Starts and stops a Minecraft instance in a tmux session.
+
+`mc-backup@.service`::
+One-shot job: stop instance, backup files, start instance.
+
+`mc-set-backup-timer.sh`::
+Generates `/etc/systemd/system/mc-backup@<instance>.timer` from env settings
+and enables it.
+
+== Configuration
+
+Configuration is read from environment files:
+
+- `/etc/default/mc/common.env` (shared defaults)
+- `/etc/default/mc/<instance>.env` (instance-specific)
+
+Important per-instance keys:
+
+`MC_SERVER_DIR`::
+Required. Server directory containing world data and server jar.
+
+`MC_JAR_NAME`::
+Required. Jar file name inside `MC_SERVER_DIR`.
+
+`MC_JAVA_BIN`::
+Java executable path. Default: `/usr/bin/java`.
+
+`MC_XMX`, `MC_XMS`::
+JVM heap settings. Default: `4G`.
+
+`MC_TMUX_SESSION`::
+tmux session name. Default: `mc-<instance>`.
+
+`MC_STOP_COMMAND`::
+Command sent to server console on stop. Default: `stop`.
+
+`MC_STOP_TIMEOUT`::
+Seconds to wait for graceful stop before force-killing tmux session.
+
+`MC_BACKUP_DIR`::
+Required. Output directory for backup archives.
+
+`MC_BACKUP_PREFIX`::
+Archive filename prefix. Default: instance name.
+
+`MC_BACKUP_LEVEL`::
+7z compression level. Default: `3`.
+
+`MC_BACKUP_RETENTION_DAYS`::
+Delete backup archives older than this value. Default: `14`.
+
+`MC_BACKUP_EXCLUDES`::
+Optional extra 7z exclude patterns (space-separated).
+
+`MC_BACKUP_ON_CALENDAR`::
+Per-instance timer schedule (same format as `OnCalendar=`). Default: `*-*-* 11:30:00`.
+
+`MC_BACKUP_RANDOMIZED_DELAY_SEC`::
+Per-instance timer jitter. Default: `15m`.
+
+`MC_BACKUP_PERSISTENT`::
+Run missed backups after downtime (`true` or `false`). Default: `true`.
+
+== Examples
+
+Enable and start one instance named `fabric_kmz`:
+
+----
+systemctl enable --now mc@fabric_kmz.service
+mc-set-backup-timer.sh fabric_kmz
+----
+
+Run backup immediately:
+
+----
+systemctl start mc-backup@fabric_kmz.service
+----
+
+Attach to the instance console:
+
+----
+tmux attach -t mc-fabric_kmz
+----
+
+== Backup Workflow
+
+`mc-backup@<instance>.service` executes `mc-backup.sh`, which performs:
+
+. `systemctl stop mc@<instance>.service`
+. archive server directory with 7z
+. exclude dynmap tile paths (`dynmap/web`)
+. delete expired archives by retention policy
+. `systemctl start mc@<instance>.service`
+
+== Files
+
+`/usr/lib/systemd/system/mc@.service`
+
+`/usr/lib/systemd/system/mc-backup@.service`
+
+`/usr/bin/mc-tmux-start.sh`
+
+`/usr/bin/mc-tmux-stop.sh`
+
+`/usr/bin/mc-backup.sh`
+
+`/usr/bin/mc-set-backup-timer.sh`
+
+`/etc/default/mc/common.env`
+
+`/etc/default/mc/<instance>.env`
+
+`/etc/systemd/system/mc-backup@<instance>.timer`
+
+`/usr/share/doc/mcsrvmanager/examples/mc-common.env.example`
+
+`/usr/share/doc/mcsrvmanager/examples/mc-instance.env.example`
+
+== See Also
+
+systemd(1), systemd.service(5), systemd.timer(5), tmux(1), 7z(1), java(1)
