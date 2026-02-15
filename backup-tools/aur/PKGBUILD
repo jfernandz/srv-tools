@@ -11,7 +11,7 @@ makedepends=('asciidoctor')
 
 _repo_url='https://github.com/jfernandz/srv-tools'
 _repo_name='srv-tools'
-_pkg_subdir='backup'
+_pkg_subdir='backup-tools'
 
 source=(
   "${pkgname}-${pkgver}.tar.gz::${_repo_url}/archive/refs/tags/${pkgname}-v${pkgver}.tar.gz"
@@ -19,7 +19,7 @@ source=(
 sha256sums=('SKIP')
 
 package() {
-  cd "$srcdir/${_repo_name}-${pkgver}/${_pkg_subdir}"
+  cd "$srcdir/${_repo_name}-${pkgname}-v${pkgver}/${_pkg_subdir}"
 
   install -d "$pkgdir/usr/bin"
   install -d "$pkgdir/usr/share/doc/$pkgname/examples"
