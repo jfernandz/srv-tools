@@ -21,19 +21,19 @@ Small set of generic backup scripts for systemd services.
 1. Copy and edit the example config:
 +
 ----
-cp backup-config.example.yaml /etc/backup/config.yaml
+cp backup-config.example.yaml /etc/backup-tools/config.yaml
 ----
 +
 2. Generate unit files and runtime configs:
 +
 ----
 ./backup-units-generator.sh \
-  --config /etc/backups/config.yaml \
+  --config /etc/backup-tools/config.yaml \
   --units-dir /etc/systemd/system \
-  --service-config-dir /etc/backup
+  --service-config-dir /etc/backup-tools
 ----
 
-If `--config` is omitted, default path `/etc/backups/config.yaml` is used.
+If `--config` is omitted, default path `/etc/backup-tools/config.yaml` is used.
 +
 3. Reload systemd and enable timers:
 +
@@ -140,7 +140,7 @@ For top-level `paths:` (if present):
 Using the example config in `src/backup-config.example.yaml`, with:
 
 - `--units-dir /etc/systemd/system`
-- `--service-config-dir /etc/backup`
+- `--service-config-dir /etc/backup-tools`
 - default `--backup-script /usr/bin/backup.sh`
 
 the generator creates these files.
@@ -153,7 +153,7 @@ Description=Stop mc@fabric_kmz.service, backup data, and restart
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/backup.sh /etc/backup/mc@fabric_kmz.conf
+ExecStart=/usr/bin/backup.sh /etc/backup-tools/mc@fabric_kmz.conf
 ----
 
 `/etc/systemd/system/backup-mc@fabric_kmz.timer`:
@@ -172,7 +172,7 @@ Unit=backup-mc@fabric_kmz.service
 WantedBy=timers.target
 ----
 
-`/etc/backup/mc@fabric_kmz.conf`:
+`/etc/backup-tools/mc@fabric_kmz.conf`:
 
 ----
 SERVICE_NAME=mc@fabric_kmz.service
@@ -198,7 +198,7 @@ Description=Stop httpd.service, backup data, and restart
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/backup.sh /etc/backup/httpd.conf
+ExecStart=/usr/bin/backup.sh /etc/backup-tools/httpd.conf
 ----
 
 `/etc/systemd/system/backup-httpd.timer`:
@@ -217,7 +217,7 @@ Unit=backup-httpd.service
 WantedBy=timers.target
 ----
 
-`/etc/backup/httpd.conf`:
+`/etc/backup-tools/httpd.conf`:
 
 ----
 SERVICE_NAME=httpd.service
@@ -244,7 +244,7 @@ Description=Backup configured paths
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/backup.sh /etc/backup/paths.conf
+ExecStart=/usr/bin/backup.sh /etc/backup-tools/paths.conf
 ----
 
 `/etc/systemd/system/backup-paths.timer`:
@@ -263,7 +263,7 @@ Unit=backup-paths.service
 WantedBy=timers.target
 ----
 
-`/etc/backup/paths.conf`:
+`/etc/backup-tools/paths.conf`:
 
 ----
 BACKUP_DIR=/srv/backups
@@ -307,8 +307,8 @@ systemctl start backup-paths.service
 Or run the runner manually:
 
 ----
-./backup.sh /etc/backup/<service>.conf
-./backup.sh /etc/backup/paths.conf
+./backup.sh /etc/backup-tools/<service>.conf
+./backup.sh /etc/backup-tools/paths.conf
 ----
 
 == Notes

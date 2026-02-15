@@ -6,16 +6,16 @@ usage() {
 usage: backup-units-generator.sh [options]
 
 Options:
-  --config <path>              Config file path (default: /etc/backups/config.yaml)
+  --config <path>              Config file path (default: /etc/backup-tools/config.yaml)
   --units-dir <dir>            Output directory for .service/.timer units (default: /etc/systemd/system)
-  --service-config-dir <dir>   Output directory for per-service backup config fragments (default: /etc/backup)
+  --service-config-dir <dir>   Output directory for per-service backup config fragments (default: /etc/backup-tools)
   --backup-script <path>       Backup runner used in ExecStart (default: /usr/bin/backup.sh)
 EOT
 }
 
-CONFIG_PATH="/etc/backups/config.yaml"
+CONFIG_PATH="/etc/backup-tools/config.yaml"
 UNITS_DIR="/etc/systemd/system"
-SERVICE_CONFIG_DIR="/etc/backup"
+SERVICE_CONFIG_DIR="/etc/backup-tools"
 BACKUP_SCRIPT="/usr/bin/backup.sh"
 
 while [[ $# -gt 0 ]]; do
@@ -222,7 +222,7 @@ done
 paths_block_exists="$(yq -r 'has("paths")' "$CONFIG_PATH")"
 if [[ "$paths_block_exists" == "true" ]]; then
   mapfile -t paths_backup_dirs < <(yq -r \
-    '(.paths | select(type == "!!seq") | .[]?), (.paths | select(type == "!!map") | .dirs // [] | .[]?)' \
+    '(.paths | select(type == "!!seq" or type == "array") | .[]?), (.paths | select(type == "!!map" or type == "object") | .dirs // [] | .[]?)' \
     "$CONFIG_PATH")
   if [[ "${#paths_backup_dirs[@]}" -eq 0 ]]; then
     echo "paths: dirs must include at least one directory (or define paths as a non-empty list)" >&2
@@ -230,11 +230,11 @@ if [[ "$paths_block_exists" == "true" ]]; then
   fi
 
   mapfile -t paths_excludes < <(yq -r \
-    '(.paths | select(type == "!!map") | .exclude_patterns // [] | .[]?)' \
+    '(.paths | select(type == "!!map" or type == "object") | .exclude_patterns // [] | .[]?)' \
     "$CONFIG_PATH")
 
   paths_backup_dir="$(yq -r \
-    '. as $root | (($root.paths | select(type == "!!map") | .output_dir) // $root.defaults.output_dir // $root.output_dir // "")' \
+    '. as $root | (($root.paths | select(type == "!!map" or type == "object") | .output_dir) // $root.defaults.output_dir // $root.output_dir // "")' \
     "$CONFIG_PATH")"
   if [[ -z "$paths_backup_dir" ]]; then
     echo "paths: output_dir is required (or provide global output_dir)" >&2
@@ -242,22 +242,22 @@ if [[ "$paths_block_exists" == "true" ]]; then
   fi
 
   paths_backup_level="$(yq -r \
-    '. as $root | (($root.paths | select(type == "!!map") | .compression_lvl) // $root.defaults.compression_lvl // $root.compression_lvl // 3)' \
+    '. as $root | (($root.paths | select(type == "!!map" or type == "object") | .compression_lvl) // $root.defaults.compression_lvl // $root.compression_lvl // 3)' \
     "$CONFIG_PATH")"
   paths_retention_days="$(yq -r \
-    '. as $root | (($root.paths | select(type == "!!map") | .retention_days) // $root.defaults.retention_days // $root.retention_days // 14)' \
+    '. as $root | (($root.paths | select(type == "!!map" or type == "object") | .retention_days) // $root.defaults.retention_days // $root.retention_days // 14)' \
     "$CONFIG_PATH")"
   paths_on_calendar="$(yq -r \
-    '. as $root | (($root.paths | select(type == "!!map") | .on_calendar) // $root.defaults.on_calendar // $root.on_calendar // "*-*-* 11:30:00")' \
+    '. as $root | (($root.paths | select(type == "!!map" or type == "object") | .on_calendar) // $root.defaults.on_calendar // $root.on_calendar // "*-*-* 11:30:00")' \
     "$CONFIG_PATH")"
   paths_randomized_delay="$(yq -r \
-    '. as $root | (($root.paths | select(type == "!!map") | .randomized_delay) // $root.defaults.randomized_delay // $root.randomized_delay // "15m")' \
+    '. as $root | (($root.paths | select(type == "!!map" or type == "object") | .randomized_delay) // $root.defaults.randomized_delay // $root.randomized_delay // "15m")' \
     "$CONFIG_PATH")"
   paths_persistent_raw="$(yq -r \
-    '. as $root | (($root.paths | select(type == "!!map") | .persistent) // $root.defaults.persistent // $root.persistent // true)' \
+    '. as $root | (($root.paths | select(type == "!!map" or type == "object") | .persistent) // $root.defaults.persistent // $root.persistent // true)' \
     "$CONFIG_PATH")"
   paths_stop_wait_seconds="$(yq -r \
-    '. as $root | (($root.paths | select(type == "!!map") | .stop_wait_seconds) // $root.defaults.stop_wait_seconds // $root.stop_wait_seconds // 300)' \
+    '. as $root | (($root.paths | select(type == "!!map" or type == "object") | .stop_wait_seconds) // $root.defaults.stop_wait_seconds // $root.stop_wait_seconds // 300)' \
     "$CONFIG_PATH")"
 
   paths_persistent="$(normalize_bool "$paths_persistent_raw" "true")"

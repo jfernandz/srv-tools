@@ -62,17 +62,17 @@ Generate units and runtime configs:
 
 ----
 backup-units-generator.sh \
-  --config /etc/backups/config.yaml \
+  --config /etc/backup-tools/config.yaml \
   --units-dir /etc/systemd/system \
-  --service-config-dir /etc/backup
+  --service-config-dir /etc/backup-tools
 ----
 
-If `--config` is omitted, `/etc/backups/config.yaml` is used.
+If `--config` is omitted, `/etc/backup-tools/config.yaml` is used.
 
 Run backup manually from generated config:
 
 ----
-backup.sh /etc/backup/<service>.conf
+backup.sh /etc/backup-tools/<service>.conf
 ----
 
 == GENERATED ARTIFACTS
