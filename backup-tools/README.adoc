@@ -28,10 +28,12 @@ cp backup-config.example.yaml /etc/backup/config.yaml
 +
 ----
 ./backup-units-generator.sh \
-  --config /etc/backup/config.yaml \
+  --config /etc/backups/config.yaml \
   --units-dir /etc/systemd/system \
   --service-config-dir /etc/backup
 ----
+
+If `--config` is omitted, default path `/etc/backups/config.yaml` is used.
 +
 3. Reload systemd and enable timers:
 +

@@ -3,16 +3,17 @@ set -euo pipefail
 
 usage() {
   cat <<'EOT'
-usage: backup-units-generator.sh --config <config.(yaml|yml|json)> [options]
+usage: backup-units-generator.sh [options]
 
 Options:
+  --config <path>              Config file path (default: /etc/backups/config.yaml)
   --units-dir <dir>            Output directory for .service/.timer units (default: /etc/systemd/system)
   --service-config-dir <dir>   Output directory for per-service backup config fragments (default: /etc/backup)
   --backup-script <path>       Backup runner used in ExecStart (default: /usr/bin/backup.sh)
 EOT
 }
 
-CONFIG_PATH=""
+CONFIG_PATH="/etc/backups/config.yaml"
 UNITS_DIR="/etc/systemd/system"
 SERVICE_CONFIG_DIR="/etc/backup"
 BACKUP_SCRIPT="/usr/bin/backup.sh"
@@ -46,11 +47,6 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
-if [[ -z "$CONFIG_PATH" ]]; then
-  usage >&2
-  exit 1
-fi
 
 if [[ ! -f "$CONFIG_PATH" ]]; then
   echo "config not found: $CONFIG_PATH" >&2
@@ -101,9 +97,9 @@ write_bash_array() {
 
 service_exists() {
   local service_unit="$1"
-  systemctl list-unit-files --type=service --no-legend "$service_unit" 2>/dev/null \
-    | awk '{print $1}' \
-    | grep -Fxq "$service_unit"
+  local load_state
+  load_state="$(systemctl show --property=LoadState --value "$service_unit" 2>/dev/null || true)"
+  [[ -n "$load_state" && "$load_state" != "not-found" ]]
 }
 
 declare -A SERVICES=()
