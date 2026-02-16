@@ -1,0 +1,14 @@
+# One Minecraft console command per line.
+# Blank lines and lines starting with # are ignored.
+
+title @a times 10 80 20
+title @a subtitle {"text":"Maintenance stop in 60s. ETA: 5-10m.","color":"yellow"}
+title @a title {"text":"Server notice","color":"gold","bold":true}
+title @a subtitle {"text":"Parada de mantenimiento en 30s. Duración: 5-10 min.","color":"yellow"}
+title @a title {"text":"Aviso del servidor","color":"gold","bold":true}
+title @a subtitle {"text":"Maintenance stop in 10s. ETA: 5-10m.","color":"red","bold":true}
+title @a title {"text":"Server notice","color":"gold","bold":true}
+title @a subtitle {"text":"Iniciando parada ahora. Duración: 5-10 min.","color":"red","bold":true}
+title @a title {"text":"Aviso del servidor","color":"gold","bold":true}
+title @a subtitle {"text":"Iniciando parada de mantenimiento ahora.","color":"red","obfuscated":true}
+title @a title {"text":"XXXXXX","color":"dark_purple","obfuscated":true}

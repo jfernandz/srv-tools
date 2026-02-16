@@ -46,8 +46,15 @@ JVM heap settings. Default: `4G`.
 `MC_TMUX_SESSION`::
 tmux session name. Default: `mc-<instance>`.
 
-`MC_STOP_COMMAND`::
-Command sent to server console on stop. Default: `stop`.
+`MC_STOP_WARN_PLAYERS`::
+Send title/subtitle warnings before stop. Default: `1`.
+
+`MC_STOP_WARN_DELAY`::
+Seconds between warning commands. Default: `6`.
+
+`MC_STOP_WARN_FILE`::
+Optional path to a custom warnings file.
+One Minecraft console command per line; blank lines and `#` comments are ignored.
 
 `MC_STOP_TIMEOUT`::
 Seconds to wait for graceful stop before failing stop operation.
@@ -81,6 +88,8 @@ tmux attach -t mc-fabric_kmz
 `/usr/share/doc/mc-srv-tools/examples/mc-common.env.example`
 
 `/usr/share/doc/mc-srv-tools/examples/mc-instance.env.example`
+
+`/usr/share/doc/mc-srv-tools/examples/mc-stop-warn.commands.example`
 
 == SEE ALSO
 
