@@ -1,6 +1,6 @@
 # Maintainer: wyre
 pkgname=backup-tools
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc='Config-driven systemd backup unit generator and runner'
 arch=('any')
@@ -30,7 +30,10 @@ package() {
 
   install -m0644 src/backup-config.example.yaml "$pkgdir/usr/share/doc/$pkgname/examples/backup-config.example.yaml"
 
-  asciidoctor -b manpage -o "$srcdir/backup-tools.7" src/backup-tools.7.adoc
+  asciidoctor -b manpage \
+    -a "mansource=${pkgname} ${pkgver}" \
+    -o "$srcdir/backup-tools.7" \
+    src/backup-tools.7.adoc
   gzip -n -9 "$srcdir/backup-tools.7"
   install -m0644 "$srcdir/backup-tools.7.gz" "$pkgdir/usr/share/man/man7/backup-tools.7.gz"
 }
