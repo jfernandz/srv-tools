@@ -1,5 +1,5 @@
 pkgbase = mc-srv-tools
-	pkgdesc = Templated systemd + tmux Minecraft server manager with backup timer
+	pkgdesc = Templated systemd + tmux Minecraft server manager
 	pkgver = 0.1.1
 	pkgrel = 1
 	url = https://github.com/jfernandz/mcsrvmanager
@@ -10,7 +10,6 @@ pkgbase = mc-srv-tools
 	depends = bash
 	depends = systemd
 	depends = tmux
-	depends = 7zip
 	depends = java-runtime-headless
 	source = mc-srv-tools-0.1.1.tar.gz::https://github.com/jfernandz/mcsrvmanager/archive/refs/tags/mc-srv-tools-v0.1.1.tar.gz
 	sha256sums = SKIP

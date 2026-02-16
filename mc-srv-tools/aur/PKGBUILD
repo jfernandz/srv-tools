@@ -1,12 +1,12 @@
 # Maintainer: wyre
 pkgname=mc-srv-tools
-pkgver=0.1.1
+pkgver=0.2.0
 pkgrel=1
-pkgdesc='Templated systemd + tmux Minecraft server manager with backup timer'
+pkgdesc='Templated systemd + tmux Minecraft server manager'
 arch=('any')
 url='https://github.com/jfernandz/mcsrvmanager'
 license=('custom')
-depends=('bash' 'systemd' 'tmux' '7zip' 'java-runtime-headless')
+depends=('bash' 'systemd' 'tmux' 'java-runtime-headless')
 makedepends=('asciidoctor')
 install="$pkgname.install"
 
@@ -20,28 +20,27 @@ source=(
 sha256sums=('SKIP')
 
 package() {
-  cd "$srcdir/${_repo_name}-${pkgver}/${_pkg_subdir}"
+  cd "$srcdir/${_repo_name}-${pkgname}-v${pkgver}/${_pkg_subdir}"
 
   install -d "$pkgdir/usr/bin"
   install -d "$pkgdir/usr/lib/systemd/system"
   install -d "$pkgdir/usr/share/doc/$pkgname/examples"
   install -d "$pkgdir/usr/share/man/man7"
 
-  install -m0755 src/mc-backup.sh "$pkgdir/usr/bin/mc-backup.sh"
-  install -m0755 src/mc-set-backup-timer.sh "$pkgdir/usr/bin/mc-set-backup-timer.sh"
   install -m0755 src/mc-tmux-start.sh "$pkgdir/usr/bin/mc-tmux-start.sh"
   install -m0755 src/mc-tmux-stop.sh "$pkgdir/usr/bin/mc-tmux-stop.sh"
 
   sed 's|/usr/local/bin/|/usr/bin/|g' src/mc@.service > "$srcdir/mc@.service.pkg"
-  sed 's|/usr/local/bin/|/usr/bin/|g' src/mc-backup@.service > "$srcdir/mc-backup@.service.pkg"
 
   install -m0644 "$srcdir/mc@.service.pkg" "$pkgdir/usr/lib/systemd/system/mc@.service"
-  install -m0644 "$srcdir/mc-backup@.service.pkg" "$pkgdir/usr/lib/systemd/system/mc-backup@.service"
 
   install -m0644 src/mc-common.env.example "$pkgdir/usr/share/doc/$pkgname/examples/mc-common.env.example"
   install -m0644 src/mc-instance.env.example "$pkgdir/usr/share/doc/$pkgname/examples/mc-instance.env.example"
 
-  asciidoctor -b manpage -o "$srcdir/mc-srv-tools.7" src/mc-srv-tools.7.adoc
+  asciidoctor -b manpage \
+    -a "mansource=${pkgname} ${pkgver}" \
+    -o "$srcdir/mc-srv-tools.7" \
+    src/mc-srv-tools.7.adoc
   gzip -n -9 "$srcdir/mc-srv-tools.7"
   install -m0644 "$srcdir/mc-srv-tools.7.gz" "$pkgdir/usr/share/man/man7/mc-srv-tools.7.gz"
 }
