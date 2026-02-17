@@ -1,6 +1,6 @@
 # Maintainer: wyre
 pkgname=backup-tools
-pkgver=0.3.3
+pkgver=0.3.4
 pkgrel=1
 pkgdesc='Config-driven systemd backup unit generator and runner'
 arch=('any')
