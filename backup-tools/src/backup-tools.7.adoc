@@ -87,12 +87,12 @@ backup.sh /etc/backup-tools/<service>.conf
 
 For each valid service entry:
 
-- `backup-<service>.timer` (targets `backup@<escaped-service>.service`)
+- `backup@<escaped-service>.timer` (targets `backup@<escaped-service>.service`)
 - `<service-config-dir>/<service>.conf`
 
 If top-level `paths:` is present and non-empty:
 
-- `backup-paths.timer` (targets `backup@paths.service`)
+- `backup@paths.timer` (targets `backup@paths.service`)
 - `<service-config-dir>/paths.conf`
 
 If a service key does not map to an existing `<name>.service` unit on the system,

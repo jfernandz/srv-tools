@@ -3,8 +3,8 @@
 Small set of generic backup scripts for systemd services.
 
 - `backup-units-generator.sh`: reads YAML/JSON config and generates:
-  - `backup-<service>.timer`
-  - `backup-paths.timer` when top-level `paths:` is defined
+  - `backup@<escaped-service>.timer`
+  - `backup@paths.timer` when top-level `paths:` is defined
   - per-service runtime config file (`<service>.conf`)
 - `backup.sh`: runtime executor used by `backup@.service`.
 
@@ -44,7 +44,7 @@ If `--config` is omitted, default path `/etc/backup-tools/config.yaml` is used.
 +
 ----
 systemctl daemon-reload
-systemctl enable --now backup-<service>.timer
+systemctl enable --now backup@<escaped-service>.timer
 ----
 
 == Config Format
@@ -135,7 +135,7 @@ services:
 
 For each service:
 
-- Timer unit: `backup-<service>.timer`
+- Timer unit: `backup@<escaped-service>.timer`
   - Uses `OnCalendar`, `RandomizedDelaySec`, `Persistent`
   - Targets escaped template instance `backup@<escaped-service>.service`
 - Runtime config: `<service-config-dir>/<service>.conf`
@@ -143,7 +143,7 @@ For each service:
 
 For top-level `paths:` (if present):
 
-- Timer unit: `backup-paths.timer`
+- Timer unit: `backup@paths.timer`
   - Targets `backup@paths.service`
 - Runtime config: `<service-config-dir>/paths.conf`
 
@@ -167,7 +167,7 @@ Type=oneshot
 ExecStart=/usr/bin/backup.sh /etc/backup-tools/%I.conf
 ----
 
-`/etc/systemd/system/backup-mc@fabric_kmz.timer`:
+`/etc/systemd/system/backup@mc\x40fabric_kmz.timer`:
 
 ----
 [Unit]
@@ -203,7 +203,7 @@ EXCLUDE_PATTERNS=(
 )
 ----
 
-`/etc/systemd/system/backup-httpd.timer`:
+`/etc/systemd/system/backup@httpd.timer`:
 
 ----
 [Unit]
@@ -240,7 +240,7 @@ EXCLUDE_PATTERNS=(
 )
 ----
 
-`/etc/systemd/system/backup-paths.timer`:
+`/etc/systemd/system/backup@paths.timer`:
 
 ----
 [Unit]
