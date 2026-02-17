@@ -1,6 +1,6 @@
 # Maintainer: wyre
 pkgname=backup-tools
-pkgver=0.3.1
+pkgver=0.3.2
 pkgrel=1
 pkgdesc='Config-driven systemd backup unit generator and runner'
 arch=('any')
@@ -22,11 +22,13 @@ package() {
   cd "$srcdir/${_repo_name}-${pkgname}-v${pkgver}/${_pkg_subdir}"
 
   install -d "$pkgdir/usr/bin"
+  install -d "$pkgdir/usr/lib/systemd/system"
   install -d "$pkgdir/usr/share/doc/$pkgname/examples"
   install -d "$pkgdir/usr/share/man/man7"
 
   install -m0755 src/backup.sh "$pkgdir/usr/bin/backup.sh"
   install -m0755 src/backup-units-generator.sh "$pkgdir/usr/bin/backup-units-generator.sh"
+  install -m0644 src/backup@.service "$pkgdir/usr/lib/systemd/system/backup@.service"
 
   install -m0644 src/backup-config.example.yaml "$pkgdir/usr/share/doc/$pkgname/examples/backup-config.example.yaml"
 
