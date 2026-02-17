@@ -11,8 +11,12 @@ backup-tools - config-driven systemd backup unit generator and runner
 
 backup-tools provides two scripts to schedule and run backups for systemd services:
 
-- `backup-units-generator.sh`: reads YAML/JSON config and generates per-service backup units and runtime config files.
-- `backup.sh`: oneshot backup runner used by generated service units.
+- `backup-units-generator.sh`: reads YAML/JSON config and generates per-job timer units and runtime config files.
+- `backup.sh`: oneshot backup runner used by `backup@.service`.
+
+Template unit provided by this project:
+
+- `backup@.service` (installed as `/usr/lib/systemd/system/backup@.service` in package builds)
 
 The workflow is intentionally generic and service-agnostic.
 
@@ -83,14 +87,12 @@ backup.sh /etc/backup-tools/<service>.conf
 
 For each valid service entry:
 
-- `backup-<service>.service`
-- `backup-<service>.timer`
+- `backup-<service>.timer` (targets `backup@<escaped-service>.service`)
 - `<service-config-dir>/<service>.conf`
 
 If top-level `paths:` is present and non-empty:
 
-- `backup-paths.service`
-- `backup-paths.timer`
+- `backup-paths.timer` (targets `backup@paths.service`)
 - `<service-config-dir>/paths.conf`
 
 If a service key does not map to an existing `<name>.service` unit on the system,

@@ -1,0 +1,6 @@
+[Unit]
+Description=Run backup job for %I
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/backup.sh /etc/backup-tools/%I.conf

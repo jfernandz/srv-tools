@@ -3,11 +3,14 @@
 Small set of generic backup scripts for systemd services.
 
 - `backup-units-generator.sh`: reads YAML/JSON config and generates:
-  - `backup-<service>.service`
   - `backup-<service>.timer`
-  - `backup-paths.service` and `backup-paths.timer` when top-level `paths:` is defined
+  - `backup-paths.timer` when top-level `paths:` is defined
   - per-service runtime config file (`<service>.conf`)
-- `backup.sh`: runtime executor used by generated `.service` files.
+- `backup.sh`: runtime executor used by `backup@.service`.
+
+Template unit provided by this project:
+
+- `backup@.service` (installed as `/usr/lib/systemd/system/backup@.service` in package builds)
 
 == Requirements
 
@@ -23,6 +26,8 @@ Small set of generic backup scripts for systemd services.
 ----
 cp backup-config.example.yaml /etc/backup-tools/config.yaml
 ----
++
+Ensure `backup@.service` is installed (package installs it under `/usr/lib/systemd/system`; for local source testing you can place it in `/etc/systemd/system`).
 +
 2. Generate unit files and runtime configs:
 +
@@ -130,17 +135,16 @@ services:
 
 For each service:
 
-- Service unit: `backup-<service>.service`
-  - Runs `backup.sh <service-config-file>`
 - Timer unit: `backup-<service>.timer`
   - Uses `OnCalendar`, `RandomizedDelaySec`, `Persistent`
+  - Targets escaped template instance `backup@<escaped-service>.service`
 - Runtime config: `<service-config-dir>/<service>.conf`
   - Shell variables consumed by `backup.sh`
 
 For top-level `paths:` (if present):
 
-- Service unit: `backup-paths.service`
 - Timer unit: `backup-paths.timer`
+  - Targets `backup@paths.service`
 - Runtime config: `<service-config-dir>/paths.conf`
 
 == Generated Files Example
@@ -149,19 +153,18 @@ Using the example config in `src/backup-config.example.yaml`, with:
 
 - `--units-dir /etc/systemd/system`
 - `--service-config-dir /etc/backup-tools`
-- default `--backup-script /usr/bin/backup.sh`
 
-the generator creates these files.
+the generator creates timer/config files that use `backup@.service`.
 
-`/etc/systemd/system/backup-mc@fabric_kmz.service`:
+`/usr/lib/systemd/system/backup@.service` (installed by package):
 
 ----
 [Unit]
-Description=Stop mc@fabric_kmz.service, backup data, and restart
+Description=Run backup job for %I
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/backup.sh /etc/backup-tools/mc@fabric_kmz.conf
+ExecStart=/usr/bin/backup.sh /etc/backup-tools/%I.conf
 ----
 
 `/etc/systemd/system/backup-mc@fabric_kmz.timer`:
@@ -174,7 +177,7 @@ Description=Scheduled backup for mc@fabric_kmz.service
 OnCalendar=*-*-* 11:30:00
 Persistent=true
 RandomizedDelaySec=15m
-Unit=backup-mc@fabric_kmz.service
+Unit=backup@mc\x40fabric_kmz.service
 
 [Install]
 WantedBy=timers.target
@@ -200,17 +203,6 @@ EXCLUDE_PATTERNS=(
 )
 ----
 
-`/etc/systemd/system/backup-httpd.service`:
-
-----
-[Unit]
-Description=Stop httpd.service, backup data, and restart
-
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/backup.sh /etc/backup-tools/httpd.conf
-----
-
 `/etc/systemd/system/backup-httpd.timer`:
 
 ----
@@ -221,7 +213,7 @@ Description=Scheduled backup for httpd.service
 OnCalendar=*-*-* 03:15:00
 Persistent=true
 RandomizedDelaySec=5m
-Unit=backup-httpd.service
+Unit=backup@httpd.service
 
 [Install]
 WantedBy=timers.target
@@ -248,17 +240,6 @@ EXCLUDE_PATTERNS=(
 )
 ----
 
-`/etc/systemd/system/backup-paths.service`:
-
-----
-[Unit]
-Description=Backup configured paths
-
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/backup.sh /etc/backup-tools/paths.conf
-----
-
 `/etc/systemd/system/backup-paths.timer`:
 
 ----
@@ -269,7 +250,7 @@ Description=Scheduled backup for configured paths
 OnCalendar=*-*-* 11:30:00
 Persistent=true
 RandomizedDelaySec=15m
-Unit=backup-paths.service
+Unit=backup@paths.service
 
 [Install]
 WantedBy=timers.target
@@ -318,8 +299,8 @@ Archive naming:
 After generation, run a backup directly:
 
 ----
-systemctl start backup-<service>.service
-systemctl start backup-paths.service
+systemctl start backup@<escaped-service>.service
+systemctl start backup@paths.service
 ----
 
 Or run the runner manually:
@@ -334,4 +315,4 @@ Or run the runner manually:
 - If `exclude_patterns` is omitted, no exclude patterns are applied.
 - Exclude entries should be plain patterns (for example `dynmap/web/*`); `backup.sh` adds `-xr!` automatically.
 - If neither valid services nor a usable `paths:` block are found, generation fails fast.
-- If a service key does not map to an existing `<name>.service` unit, that service is skipped and no `backup-<service>.service` or `backup-<service>.timer` is generated for it.
+- If a service key does not map to an existing `<name>.service` unit, that service is skipped and no timer/config is generated for it.
