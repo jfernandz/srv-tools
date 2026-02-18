@@ -39,10 +39,12 @@ Use `backup-fetcher.sh` to pull backup files from a remote server:
   --destination /srv/restore/backups
 ----
 
-Available options include `--port`, `--identity-file`, `--delete`, and `--dry-run`.
+Available options include `--port`, `--identity-file`, `--delete`, `--dry-run`,
+and `--max-retention-days`.
 You can also configure it with environment variables:
 `FETCH_USER`, `FETCH_HOST`, `FETCH_SOURCE`, `FETCH_DESTINATION`,
-`FETCH_PORT`, `FETCH_IDENTITY_FILE`, `FETCH_DELETE`, and `FETCH_DRY_RUN`.
+`FETCH_PORT`, `FETCH_IDENTITY_FILE`, `FETCH_DELETE`, `FETCH_DRY_RUN`,
+and `FETCH_MAX_RETENTION_DAYS`.
 CLI options override environment values.
 
 Install systemd units directly from the script:

@@ -16,6 +16,7 @@ Options:
   --identity-file <path>    SSH private key file
   --delete                  Delete local files not present on remote source
   --dry-run                 Show what would change without copying data
+  --max-retention-days <n>  Delete destination files older than <n> days after fetch
   --install                 Generate a systemd service unit and exit
   --install-timer           Generate a systemd timer unit (implies --install)
   --on-calendar <expr>      OnCalendar value for generated timer
@@ -35,6 +36,7 @@ Environment variables:
   FETCH_IDENTITY_FILE
   FETCH_DELETE
   FETCH_DRY_RUN
+  FETCH_MAX_RETENTION_DAYS
 
 Precedence: CLI options override environment variables.
 
@@ -59,6 +61,13 @@ Examples:
   FETCH_SOURCE=/srv/backups/ \
   FETCH_DESTINATION=/srv/restore/backups \
   backup-fetcher.sh
+
+  backup-fetcher.sh \
+    --user backup \
+    --host backup.example.com \
+    --source /srv/backups/ \
+    --destination /srv/restore/backups \
+    --max-retention-days 30
 
   backup-fetcher.sh --install
 
@@ -170,6 +179,7 @@ FETCH_PORT=22
 # FETCH_IDENTITY_FILE=/root/.ssh/id_ed25519
 FETCH_DELETE=false
 FETCH_DRY_RUN=false
+# FETCH_MAX_RETENTION_DAYS=30
 EOT
 }
 
@@ -183,6 +193,7 @@ CLI_USE_DELETE=false
 CLI_USE_DELETE_SET=false
 CLI_DRY_RUN=false
 CLI_DRY_RUN_SET=false
+CLI_MAX_RETENTION_DAYS=""
 INSTALL_SERVICE=false
 INSTALL_TIMER=false
 ON_CALENDAR=""
@@ -226,6 +237,10 @@ while [[ $# -gt 0 ]]; do
       CLI_DRY_RUN=true
       CLI_DRY_RUN_SET=true
       shift
+      ;;
+    --max-retention-days)
+      CLI_MAX_RETENTION_DAYS="${2:-}"
+      shift 2
       ;;
     --install)
       INSTALL_SERVICE=true
@@ -320,6 +335,7 @@ SSH_PORT="${FETCH_PORT:-22}"
 IDENTITY_FILE="${FETCH_IDENTITY_FILE:-}"
 USE_DELETE="$(normalize_bool "${FETCH_DELETE:-}" "false")"
 DRY_RUN="$(normalize_bool "${FETCH_DRY_RUN:-}" "false")"
+MAX_RETENTION_DAYS="${FETCH_MAX_RETENTION_DAYS:-}"
 
 if [[ -n "$CLI_REMOTE_USER" ]]; then
   REMOTE_USER="$CLI_REMOTE_USER"
@@ -353,6 +369,10 @@ if [[ "$CLI_DRY_RUN_SET" == "true" ]]; then
   DRY_RUN="$CLI_DRY_RUN"
 fi
 
+if [[ -n "$CLI_MAX_RETENTION_DAYS" ]]; then
+  MAX_RETENTION_DAYS="$CLI_MAX_RETENTION_DAYS"
+fi
+
 if [[ -z "$REMOTE_USER" ]]; then
   echo "--user is required (or set FETCH_USER)" >&2
   exit 1
@@ -375,6 +395,11 @@ fi
 
 if [[ ! "$SSH_PORT" =~ ^[0-9]+$ ]]; then
   echo "--port must be numeric" >&2
+  exit 1
+fi
+
+if [[ -n "$MAX_RETENTION_DAYS" && ! "$MAX_RETENTION_DAYS" =~ ^[0-9]+$ ]]; then
+  echo "--max-retention-days must be numeric" >&2
   exit 1
 fi
 
@@ -417,4 +442,12 @@ fi
 
 remote_spec="${REMOTE_USER}@${REMOTE_HOST}:${SOURCE_PATH}"
 
-exec rsync "${rsync_args[@]}" "$remote_spec" "$DESTINATION_PATH/"
+rsync "${rsync_args[@]}" "$remote_spec" "$DESTINATION_PATH/"
+
+if [[ -n "$MAX_RETENTION_DAYS" ]]; then
+  if [[ "$DRY_RUN" == "true" ]]; then
+    echo "skipping retention prune because --dry-run is enabled"
+  else
+    find "$DESTINATION_PATH" -type f -mtime +"$MAX_RETENTION_DAYS" -delete
+  fi
+fi
