@@ -23,6 +23,7 @@ Options:
   --unit-name <name>        Base unit name without suffix (default: backup-fetcher)
   --systemd-dir <path>      Unit output directory (default: /etc/systemd/system)
   --exec-path <path>        ExecStart path in generated service (default: /usr/local/bin/backup-fetcher.sh)
+  --service-user <name>     User for generated service process (optional)
   --service-env-file <path> EnvironmentFile path in generated service
                             (template is created during --install if missing)
   -h, --help                Show this help
@@ -70,6 +71,8 @@ Examples:
     --max-retention-days 30
 
   backup-fetcher.sh --install
+
+  backup-fetcher.sh --install --service-user wyre
 
   backup-fetcher.sh --install-timer --on-calendar "*-*-* 01:30:00"
 EOT
@@ -127,6 +130,12 @@ write_service_unit() {
   local service_path="$1"
   local env_file="$2"
   local exec_path="$3"
+  local service_user="$4"
+
+  local user_line=""
+  if [[ -n "$service_user" ]]; then
+    user_line="User=${service_user}"
+  fi
 
   cat > "$service_path" <<EOT
 [Unit]
@@ -136,6 +145,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
+${user_line}
 EnvironmentFile=-${env_file}
 ExecStart=${exec_path}
 
@@ -201,6 +211,7 @@ UNIT_NAME="backup-fetcher"
 SYSTEMD_DIR="/etc/systemd/system"
 EXEC_PATH="/usr/local/bin/backup-fetcher.sh"
 SERVICE_ENV_FILE=""
+SERVICE_USER=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -270,6 +281,10 @@ while [[ $# -gt 0 ]]; do
       SERVICE_ENV_FILE="${2:-}"
       shift 2
       ;;
+    --service-user)
+      SERVICE_USER="${2:-}"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -302,7 +317,7 @@ if [[ "$INSTALL_SERVICE" == "true" ]]; then
   mkdir -p "$env_dir"
 
   service_path="${SYSTEMD_DIR}/${UNIT_NAME}.service"
-  write_service_unit "$service_path" "$SERVICE_ENV_FILE" "$EXEC_PATH"
+  write_service_unit "$service_path" "$SERVICE_ENV_FILE" "$EXEC_PATH" "$SERVICE_USER"
   echo "generated service unit: $service_path"
 
   if [[ -f "$SERVICE_ENV_FILE" ]]; then
