@@ -1,0 +1,199 @@
+= ProtonVPN aMule Port Sync
+
+This directory contains a small systemd-managed helper for keeping aMule's TCP and UDP listen ports aligned with the forwarded port assigned by ProtonVPN NAT-PMP.
+
+It is intended for Linux systems that connect to ProtonVPN using a manual WireGuard setup and need aMule updated automatically whenever the forwarded port changes.
+
+== What Proton Requires
+
+Per ProtonVPN's Linux documentation:
+
+* Use a ProtonVPN server that supports P2P.
+* When generating the WireGuard config, enable `NAT-PMP (port forwarding)`.
+* On Linux, port forwarding is maintained by repeatedly renewing NAT-PMP mappings against gateway `10.2.0.1`.
+* `natpmpc` versions `20230423-xxx` or newer are recommended. Proton notes that `20150609-xxx` has a known parsing bug.
+
+Relevant ProtonVPN references:
+
+* https://protonvpn.com/support/port-forwarding-manual-setup[How to manually set up port forwarding]
+* https://protonvpn.com/support/wireguard-linux[How to manually configure WireGuard on Linux]
+
+== Files
+
+`src/proton-amule-port-sync.sh`::
+Requests and renews the forwarded ProtonVPN port, updates `Port=` and `UDPPort=` in `amule.conf`, and restarts the aMule service when the port changes.
+
+`src/proton-amule-port-sync.service`::
+Systemd unit that runs the sync loop continuously.
+
+`src/proton-amule-port-sync.env.example`::
+Example environment file loaded by the unit through `EnvironmentFile=`.
+
+== Proton WireGuard Setup
+
+Before using these helpers, create and test a working ProtonVPN WireGuard connection.
+
+=== Option 1: NetworkManager CLI
+
+Proton documents importing the WireGuard config with `nmcli`:
+
+[source,bash]
+----
+nmcli conn import type wireguard file proton-238.conf
+nmcli conn up proton-UK-238
+----
+
+To disconnect:
+
+[source,bash]
+----
+nmcli conn down proton-UK-238
+----
+
+=== Option 2: wg-quick
+
+For minimal systems without NetworkManager, Proton documents `wg-quick`:
+
+[source,bash]
+----
+sudo cp proton-xx.conf /etc/wireguard/proton.conf
+sudo wg-quick up proton
+sudo wg
+----
+
+To stop the tunnel:
+
+[source,bash]
+----
+sudo wg-quick down proton
+----
+
+=== WireGuard Notes
+
+* Proton's guide says the `.conf` filename should stay under 15 characters.
+* Proton says current WireGuard configs support IPv6. If you have an older config, download a fresh one.
+
+== Port Forwarding Flow
+
+Proton's manual Linux flow is:
+
+. Connect to a P2P-capable ProtonVPN server with NAT-PMP enabled.
+. Install `natpmpc`.
+. Confirm the forwarded-port gateway responds:
++
+[source,bash]
+----
+natpmpc -g 10.2.0.1
+----
+. Renew both UDP and TCP mappings on a loop.
+
+The helper script in this repo automates the last step and also pushes the active forwarded port into aMule.
+
+== Install
+
+Install dependencies first. On Debian or Ubuntu:
+
+[source,bash]
+----
+sudo apt install natpmpc
+----
+
+Then install the helper files:
+
+[source,bash]
+----
+sudo make -C pkg install
+----
+
+If you do not want to keep the example values as-is, edit the environment file after copying it:
+
+[source,bash]
+----
+sudoedit /etc/default/proton-amule-port-sync.env
+----
+
+== Configuration
+
+The service reads `/etc/default/proton-amule-port-sync.env`.
+
+Example values:
+
+[source]
+----
+GATEWAY=10.2.0.1
+LIFETIME=60
+SLEEP_SECS=45
+
+AMULE_USER=pi
+AMULE_HOME=/home/pi
+AMULE_CONF=/home/pi/.aMule/amule.conf
+AMULE_SERVICE=amule-daemon.service
+
+VPN_IFACE=
+----
+
+Important settings:
+
+`GATEWAY`::
+ProtonVPN NAT-PMP gateway. Proton's Linux guide uses `10.2.0.1`.
+
+`LIFETIME` and `SLEEP_SECS`::
+Match Proton's documented NAT-PMP renewal pattern of a 60 second lease with a 45 second refresh loop.
+
+`AMULE_CONF`::
+Path to the aMule configuration file containing the `[eMule]` section.
+
+`AMULE_SERVICE`::
+Systemd service name used to stop and start aMule after a port change.
+
+`VPN_IFACE`::
+Optional route check such as `wg0` or `tun0`.
+
+== Enable The Service
+
+[source,bash]
+----
+sudo make -C pkg enable
+----
+
+Check logs with:
+
+[source,bash]
+----
+journalctl -u proton-amule-port-sync.service -f
+----
+
+The packaging `Makefile` also provides `reload`, `disable`, `start`, `stop`, `restart`, and `uninstall` targets.
+
+== What The Script Does
+
+The loop:
+
+. Verifies the Proton NAT-PMP gateway is reachable, optionally through a specific interface.
+. Requests a UDP mapping and a TCP mapping from Proton.
+. Confirms both mappings resolve to the same public port.
+. Writes that port to `/run/proton-amule-port-sync/current_port`.
+. Updates `Port=` and `UDPPort=` in `amule.conf` if needed.
+. Restarts the configured aMule service only when the port changed.
+
+== aMule Notes
+
+Because Proton can assign a different forwarded port on each VPN session, a static aMule listen port is not sufficient. This helper exists to bridge that gap.
+
+You should also make sure aMule is not relying on separate router-side UPnP or NAT-PMP behavior that would conflict with the Proton-assigned port.
+
+== Troubleshooting
+
+If `natpmpc -g 10.2.0.1` fails:
+
+* Confirm the active ProtonVPN server supports P2P.
+* Confirm the WireGuard config was generated with `NAT-PMP (port forwarding)` enabled.
+* Confirm the VPN tunnel is actually up before starting the sync service.
+
+If the service starts but aMule is not updated:
+
+* Check that `AMULE_CONF` points to the real config file.
+* Check that `AMULE_SERVICE` matches the actual unit name on the host.
+* Check that the service user has write access to the aMule config and to `/run/proton-amule-port-sync`.
+
+If you use `wg-quick`, make sure the interface name you expect matches `VPN_IFACE` if you set that extra route check.
