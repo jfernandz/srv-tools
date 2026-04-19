@@ -231,19 +231,23 @@ update_emule_ports() {
     mv "$tmp" "$AMULE_CONF"
 }
 
+is_amule_running() {
+    pgrep -u "$AMULE_USER" -x amuled >/dev/null 2>&1
+}
+
 stop_amule() {
     log "Stopping $AMULE_SERVICE"
     systemctl stop "$AMULE_SERVICE" || return 1
 
     local i
     for i in $(seq 1 30); do
-        if ! pgrep -u "$AMULE_USER" -x amuled >/dev/null 2>&1; then
+        if ! is_amule_running; then
             break
         fi
         sleep 1
     done
 
-    if pgrep -u "$AMULE_USER" -x amuled >/dev/null 2>&1; then
+    if is_amule_running; then
         log "amuled is still running after stop timeout"
         return 1
     fi
@@ -251,15 +255,38 @@ stop_amule() {
     if pgrep -u "$AMULE_USER" -x amuleweb >/dev/null 2>&1; then
         log "Killing leftover amuleweb processes"
         pkill -u "$AMULE_USER" -x amuleweb || true
-        sleep 1
+        local j
+        for j in $(seq 1 5); do
+            pgrep -u "$AMULE_USER" -x amuleweb >/dev/null 2>&1 || break
+            sleep 1
+        done
     fi
+
+    # Remove stale lock files that amuled leaves behind on unclean shutdown
+    local amule_dir lock
+    amule_dir="${AMULE_CONF%/*}"
+    for lock in "$amule_dir/amuled.pid" "$amule_dir/amuled.lock"; do
+        [ -f "$lock" ] && { log "Removing stale lock: $lock"; rm -f "$lock"; }
+    done
 
     return 0
 }
 
 start_amule() {
     log "Starting $AMULE_SERVICE"
-    systemctl start "$AMULE_SERVICE"
+    systemctl start "$AMULE_SERVICE" || return 1
+
+    local i
+    for i in $(seq 1 15); do
+        if is_amule_running; then
+            log "amuled is running"
+            return 0
+        fi
+        sleep 1
+    done
+
+    log "amuled did not come up after start"
+    return 1
 }
 
 sync_amule_port_if_needed() {
@@ -271,8 +298,13 @@ $(read_emule_ports)
 EOF
 
     if [ "$current_port" = "$new_port" ] && [ "$current_udp" = "$new_port" ]; then
-        log "aMule already configured with Port=$new_port UDPPort=$new_port"
-        return 1
+        if is_amule_running; then
+            log "aMule already configured with Port=$new_port UDPPort=$new_port"
+            return 1
+        fi
+        log "Port already set to $new_port but amuled is not running — starting it"
+        start_amule
+        return $?
     fi
 
     log "aMule config needs update: Port=${current_port:-<unset>} UDPPort=${current_udp:-<unset>} -> $new_port"
